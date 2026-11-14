@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "query = 只读核验；claim = 明确提交一次签到"
+        description: "query = 只读核验；claim = 明确提交一次签到（需手动触发）"
         required: true
         default: query
         type: choice
@@ -56,7 +56,9 @@ jobs:
           BARK_URL: ${{ secrets.BARK_URL }}
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
         run: python doubaowork_daily.py --query
-      - name: Scheduled claim (daily auto)
+      - name: Scheduled query (daily auto)
+        # landing/checkin 需要浏览器SDK实时生成 biz_params/AgwCommonParam 签名，纯HTTP无法绕过。
+        # 定时任务改为query模式查状态并通过PushPlus/Bark推送通知，用户需在豆包App内手动点一次签到。
         if: ${{ github.event_name == 'schedule' }}
         env:
           DOUBAOWORK_COOKIES: ${{ secrets.DOUBAOWORK_COOKIES }}
@@ -69,7 +71,7 @@ jobs:
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
           BARK_URL: ${{ secrets.BARK_URL }}
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
-        run: python doubaowork_daily.py
+        run: python doubaowork_daily.py --query
       - name: Claim once (explicit dispatch only)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'claim' }}
         env:
